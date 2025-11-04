@@ -109,10 +109,14 @@ module.exports = function (router) {
                 assignedUserName: req.body.assignedUserName || "unassigned",
                 dateCreated: new Date()
             });
-            await task.save();
             if (task.assignedUser) {
-                await User.findByIdAndUpdate(task.assignedUser, { $push: { pendingTasks: task._id } });
+                const user = await User.findById(task.assignedUser);
+                if (user) {
+                    task.assignedUserName = user.name; // Set the name
+                    await user.updateOne({ $push: { pendingTasks: task._id } });
+                }
             }
+            await task.save();
             res.status(201).json({ message: "Task created", data: task });
         } catch (err) {
             res.status(400).json({ message: "Bad request", data: { error: err.message } });
